@@ -30,45 +30,65 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <rqt_param_manager/image_view.h>
+#ifndef rqt_param_manager__ImageView_H
+#define rqt_param_manager__ImageView_H
 
-#include <pluginlib/class_list_macros.h>
-#include <ros/master.h>
-#include <sensor_msgs/image_encodings.h>
+#include <rqt_gui_cpp/plugin.h>
 
-#include <cv_bridge/cv_bridge.h>
-#include <opencv2/imgproc/imgproc.hpp>
 
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QPainter>
+#include <ros/package.h>
+#include <ros/macros.h>
+#include <sensor_msgs/Image.h>
+#include <geometry_msgs/Point.h>
+
+#include <opencv2/core/core.hpp>
+
+#include <QAction>
+#include <QImage>
+#include <QList>
+#include <QString>
+#include <QSize>
+#include <QWidget>
+
+#include <vector>
+
+#include <ui_test.h>
 
 namespace rqt_param_manager {
 
-ImageView::ImageView()
-  : rqt_gui_cpp::Plugin()
-  , widget_(0)
+class MainView
+  : public rqt_gui_cpp::Plugin
 {
-  setObjectName("ImageView");
+
+  Q_OBJECT
+
+public:
+
+  MainView();
+
+  virtual void initPlugin(qt_gui_cpp::PluginContext& context);
+
+  virtual void shutdownPlugin();
+
+
+protected slots:
+
+
+protected:
+
+
+protected slots:
+
+
+protected:
+
+  Ui::Test ui_;
+
+  QWidget* widget_;
+
+private:
+};
+
 }
 
-void ImageView::initPlugin(qt_gui_cpp::PluginContext& context)
-{
-  widget_ = new QWidget();
-  ui_.setupUi(widget_);
-
-  if (context.serialNumber() > 1)
-  {
-    widget_->setWindowTitle(widget_->windowTitle() + " (" + QString::number(context.serialNumber()) + ")");
-  }
-  context.addWidget(widget_);
-
-}
-
-void ImageView::shutdownPlugin()
-{
-}
-
-}
-
-PLUGINLIB_EXPORT_CLASS(rqt_param_manager::ImageView, rqt_gui_cpp::Plugin)
+#endif // rqt_param_manager__MainView_H

@@ -30,65 +30,45 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef rqt_param_manager__ImageView_H
-#define rqt_param_manager__ImageView_H
+#include <rqt_param_manager/main_view.h>
 
-#include <rqt_gui_cpp/plugin.h>
+#include <pluginlib/class_list_macros.h>
+#include <ros/master.h>
+#include <sensor_msgs/image_encodings.h>
 
+#include <cv_bridge/cv_bridge.h>
+#include <opencv2/imgproc/imgproc.hpp>
 
-#include <ros/package.h>
-#include <ros/macros.h>
-#include <sensor_msgs/Image.h>
-#include <geometry_msgs/Point.h>
-
-#include <opencv2/core/core.hpp>
-
-#include <QAction>
-#include <QImage>
-#include <QList>
-#include <QString>
-#include <QSize>
-#include <QWidget>
-
-#include <vector>
-
-#include <ui_test.h>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QPainter>
 
 namespace rqt_param_manager {
 
-class ImageView
-  : public rqt_gui_cpp::Plugin
+MainView::MainView()
+  : rqt_gui_cpp::Plugin()
+  , widget_(0)
 {
+  setObjectName("MainView");
+}
 
-  Q_OBJECT
+void MainView::initPlugin(qt_gui_cpp::PluginContext& context)
+{
+  widget_ = new QWidget();
+  ui_.setupUi(widget_);
 
-public:
-
-  ImageView();
-
-  virtual void initPlugin(qt_gui_cpp::PluginContext& context);
-
-  virtual void shutdownPlugin();
-
-
-protected slots:
-
-
-protected:
-
-
-protected slots:
-
-
-protected:
-
-  Ui::Test ui_;
-
-  QWidget* widget_;
-
-private:
-};
+  if (context.serialNumber() > 1)
+  {
+    widget_->setWindowTitle(widget_->windowTitle() + " (" + QString::number(context.serialNumber()) + ")");
+  }
+  context.addWidget(widget_);
 
 }
 
-#endif // rqt_param_manager__ImageView_H
+void MainView::shutdownPlugin()
+{
+}
+
+}
+
+PLUGINLIB_EXPORT_CLASS(rqt_param_manager::MainView, rqt_gui_cpp::Plugin)

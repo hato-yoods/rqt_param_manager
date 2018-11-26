@@ -1,17 +1,19 @@
 <library path="lib/librqt_param_manager">
-  <class name="rqt_param_manager/ImageView" type="rqt_param_manager::ImageView" base_class_type="rqt_gui_cpp::Plugin">
+  <class name="rqt_param_manager/MainView" type="rqt_param_manager::MainView" base_class_type="rqt_gui_cpp::Plugin">
     <description>
-      A GUI plugin to view a sensor_msgs/Image topic.
+      rqt param manager description.
     </description>
     <qtgui>
+      <!--
       <group>
-        <label>Visualization</label>
-        <icon type="theme">folder</icon>
-        <statustip>Plugins related to visualization.</statustip>
+        <label></label>
+        <icon type="theme"></icon>
+        <statustip></statustip>
       </group>
-      <label>Image View</label>
+      -->
+      <label>rqt param manager</label>
       <icon type="theme">image-x-generic</icon>
-      <statustip>A GUI plugin for viewing sensor_msgs/Image topics.</statustip>
+      <statustip>rqt param manager tip.</statustip>
     </qtgui>
   </class>
 </library>

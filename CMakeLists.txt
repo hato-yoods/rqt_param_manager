@@ -12,15 +12,15 @@ else()
 endif()
 
 set(rqt_param_manager_SRCS
-  src/rqt_param_manager/image_view.cpp
+  src/rqt_param_manager/main_view.cpp
 )
 
 set(rqt_param_manager_HDRS
-  include/rqt_param_manager/image_view.h
+  include/rqt_param_manager/main_view.h
 )
 
 set(rqt_param_manager_UIS
-  src/rqt_param_manager/test.ui
+  src/rqt_param_manager/main_view.ui
 )
 
 set(rqt_param_manager_INCLUDE_DIRECTORIES

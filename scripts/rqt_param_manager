@@ -12,5 +12,5 @@ def add_arguments(parser):
 main = Main()
 sys.exit(main.main(
     sys.argv,
-    standalone='rqt_param_manager/ImageView',
+    standalone='rqt_param_manager/MainView',
     plugin_argument_provider=add_arguments))

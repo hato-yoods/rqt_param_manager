@@ -1,17 +1,17 @@
 <package>
   <name>rqt_param_manager</name>
   <version>0.4.13</version>
-  <description>rqt_image_view provides a GUI plugin for displaying images using image_transport.</description>
-  <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
-  <maintainer email="ablasdel@gmail.com">Aaron Blasdel</maintainer>
+  <description>rqt param manager description.</description>
+  <maintainer email="yoods@to.do">YOODS</maintainer>
 
-  <license>BSD</license>
-
-  <url type="website">http://wiki.ros.org/rqt_image_view</url>
-  <url type="repository">https://github.com/ros-visualization/rqt_image_view</url>
-  <url type="bugtracker">https://github.com/ros-visualization/rqt_image_view/issues</url>
-
-  <author>Dirk Thomas</author>
+  <license>TODO</license>
+  <!--
+  <url type="website">http://</url>
+  <url type="repository">https://github.com/</url>
+  <url type="bugtracker">https://github.com/</url>
+  -->
+  
+  <author>YOODS</author>
 
   <buildtool_depend>catkin</buildtool_depend>
 
