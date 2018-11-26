@@ -52,9 +52,14 @@
 
 #include <vector>
 
-#include <ui_test.h>
+#include <ui_main_view.h>
+
+
 
 namespace rqt_param_manager {
+
+	
+class QShowEvent;
 
 class MainView
   : public rqt_gui_cpp::Plugin
@@ -71,18 +76,15 @@ public:
   virtual void shutdownPlugin();
 
 
-protected slots:
+protected:
+  void showEvent(QShowEvent *event);
 
-
+private slots:
+	void onParamUpdate(void);
+	void onParamSave(void);
 protected:
 
-
-protected slots:
-
-
-protected:
-
-  Ui::Test ui_;
+  Ui::MainView ui_;
 
   QWidget* widget_;
 
