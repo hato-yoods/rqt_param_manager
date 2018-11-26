@@ -66,7 +66,16 @@ class MainView
 {
 
   Q_OBJECT
-
+private:
+	struct param_data{
+		QString label;
+		QString name;
+	};
+	
+	QList<param_data> mParams;
+	
+	int mMonInterval;
+	QString mDumpFilePath;
 public:
 
   MainView();
