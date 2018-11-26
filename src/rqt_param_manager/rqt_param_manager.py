@@ -1,3 +1,4 @@
+import sys
 import os
 import rospy
 import rospkg
@@ -6,29 +7,32 @@ from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtWidgets import QWidget
 
-class MyPlugin(Plugin):
+class RqtParamManagerPlugin(Plugin):
 
     def __init__(self, context):
-        super(MyPlugin, self).__init__(context)
+        super(RqtParamManagerPlugin, self).__init__(context)
         # Give QObjects reasonable names
-        self.setObjectName('MyPlugin')
+        self.setObjectName('RqtParamManagerPlugin')
 
+        print (sys.argv)
+        
+        
         # Process standalone plugin command-line arguments
-        from argparse import ArgumentParser
-        parser = ArgumentParser()
+        #from argparse import ArgumentParser
+        #parser = ArgumentParser()
         # Add argument(s) to the parser.
-        parser.add_argument("-q", "--quiet", action="store_true",
-                      dest="quiet",
-                      help="Put plugin in silent mode")
-        args, unknowns = parser.parse_known_args(context.argv())
-        if not args.quiet:
-            print 'arguments: ', args
-            print 'unknowns: ', unknowns
+        #parser.add_argument("-q", "--quiet", action="store_true",
+        #              dest="quiet",
+        #              help="Put plugin in silent mode")
+        #args, unknowns = parser.parse_known_args(sys.argv)
+        #if not args.quiet:
+        #print 'arguments: ', args
+        #print 'unknowns: ', unknowns
 
         # Create QWidget
         self._widget = QWidget()
         # Get path to UI file which should be in the "resource" folder of this package
-        ui_file = os.path.join(rospkg.RosPack().get_path('rqt_param_manager'), 'resource', 'MyPlugin.ui')
+        ui_file = os.path.join(rospkg.RosPack().get_path('rqt_param_manager'), 'resource', 'RqtParamManagerPlugin.ui')
         # Extend the widget with all attributes and children from UI file
         loadUi(ui_file, self._widget)
         # Give QObjects reasonable names
@@ -43,6 +47,9 @@ class MyPlugin(Plugin):
         # Add widget to the user interface
         context.add_widget(self._widget)
 
+
+        print context.serial_number()
+        
     def shutdown_plugin(self):
         # TODO unregister all publishers here
         pass
