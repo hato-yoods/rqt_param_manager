@@ -43,7 +43,7 @@ class RqtParamManagerPlugin(Plugin):
 
         self.setObjectName('RqtParamManagerPlugin')
 
-        resultLoadConfFile = self._loadConfFile(sys.argv)
+        resultLoadConfFile = self.loadConfFile(sys.argv)
 
         # Create QWidget
         self._widget = QWidget()
@@ -65,16 +65,26 @@ class RqtParamManagerPlugin(Plugin):
 
         context.add_widget(self._widget)
 
-        self._setupParamsTable(self._widget.tblParams)
+        self.setupParamsTable(self._widget.tblParams)
 
-    def _setupParamsTable(self, table):
+        if not resultLoadConfFile:
+            self._widget.btnUpdate.setEnabled(False)
+            self._widget.btnSave.setEnabled(False)
+        else:
+            # bind connections
+            self._widget.btnUpdate.clicked.connect(self.onExecUpdate)
+            self._widget.btnSave.clicked.connect(self.onExecSave)
+
+            self.loadParamsTableItem(self._widget.tblParams, self.params)
+
+    def setupParamsTable(self, table):
         table.setColumnCount(3)
 
         # dummy data
-        table.setRowCount(200)
-        table.setItem(0, 0, QTableWidgetItem("ABC"))
-        table.setItem(0, 1, QTableWidgetItem("CDE"))
-        table.setItem(0, 2, QTableWidgetItem("GHI"))
+        # table.setRowCount(200)
+        # table.setItem(0, 0, QTableWidgetItem("ABC"))
+        # table.setItem(0, 1, QTableWidgetItem("CDE"))
+        # table.setItem(0, 2, QTableWidgetItem("GHI"))
 
         # 列1,2は編集不可
         noEditDelegate = NotEditableDelegate()
@@ -125,7 +135,7 @@ class RqtParamManagerPlugin(Plugin):
         # in each dock widget title bar
         # Usually used to open a modal configuration dialog
 
-    def _loadConfFile(self, argv):
+    def loadConfFile(self, argv):
         result = False
 
         if not len(sys.argv) > 1:
@@ -134,7 +144,7 @@ class RqtParamManagerPlugin(Plugin):
             tokens = sys.argv[1].split(":=")
             if len(tokens) == 2 and tokens[0] == "_conffile":
                 confFilePath = tokens[1]
-                result = self._parseConfFile(confFilePath)
+                result = self.parseConfFile(confFilePath)
             else:
                 rospy.logerr(
                     "%s argv '_conffile' is wrong format. %s",
@@ -144,7 +154,7 @@ class RqtParamManagerPlugin(Plugin):
 
         return result
 
-    def _parseConfFile(self, confFilePath):
+    def parseConfFile(self, confFilePath):
         result = False
 
         rospy.loginfo("%s load conf file. path=%s", LOG_HEADER, confFilePath)
@@ -175,8 +185,34 @@ class RqtParamManagerPlugin(Plugin):
             )
 
             self.params = json_dict["params"]
+
+            result = True
         except IOError as e:
-            print (e)
             rospy.logerr("%s json file load failed. %s", LOG_HEADER, e)
 
         return result
+
+    def loadParamsTableItem(self, table, params):
+        rowNum = len(params)
+        # print "rowNum=%d" % rowNum
+
+        table.setRowCount(rowNum)
+
+        n = 0
+        for param in params:
+            try:
+                label = param["paramDisp"]
+                table.setItem(n, 0, QTableWidgetItem(label))
+                print param
+                print "--------------"
+            except KeyError as e:
+                table.setItem(n, 0, QTableWidgetItem("不明"))
+                rospy.logerr("%s conf file key error. %s", LOG_HEADER, e)
+
+            n = n + 1
+
+    def onExecUpdate(self):
+        print "exec update"
+
+    def onExecSave(self):
+        print "exec save"
