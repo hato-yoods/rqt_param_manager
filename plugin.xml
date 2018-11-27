@@ -1,7 +1,7 @@
 <library path="src">
-  <class name="My Plugin" type="rqt_param_manager.rqt_param_manager.RqtParamManagerPlugin" base_class_type="rqt_gui_py::Plugin">
+  <class name="RqtParamManagerPlugin" type="rqt_param_manager.rqt_param_manager.RqtParamManagerPlugin" base_class_type="rqt_gui_py::Plugin">
     <description>
-      An example Python GUI plugin to create a great user interface.
+      RqtParamManagerPlugin description.
     </description>
     <qtgui>
       <!-- optional grouping...
@@ -12,8 +12,8 @@
         <label>Subgroup</label>
       </group>
       -->
-      <label>My first Python Plugin</label>
-      <icon type="theme">system-help</icon>
+      <label>RqtParamManagerPlugin</label>
+      <icon type="theme">utilities-system-monitor</icon>
       <statustip>Great user interface to provide real value.</statustip>
     </qtgui>
   </class>
