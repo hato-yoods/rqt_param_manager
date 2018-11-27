@@ -9,7 +9,19 @@
         {
             "paramDisp": "ゲイン",
             "paramName": "/rovi/live/camera/Gain"
+        },
+        {
+            "paramDisp": "背景色(赤)",
+            "paramName": "/background_r"
+        },
+        {
+            "paramDisp": "背景色(緑)",
+            "paramName": "/background_g"
+        },
+        {
+            "paramDisp": "背景色(青)",
+            "paramName": "/background_b"
         }
     ],
-    "getInterval": 1
+    "getInterval": 3
 }

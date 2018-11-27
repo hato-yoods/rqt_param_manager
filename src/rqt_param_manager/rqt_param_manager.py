@@ -10,7 +10,7 @@ from qt_gui.plugin import Plugin
 
 from python_qt_binding import loadUi
 from python_qt_binding import QtGui
-from python_qt_binding.QtCore import QTimer
+from python_qt_binding.QtCore import QTimer, QVariant
 from python_qt_binding.QtWidgets import (
     QWidget,
     QTableWidgetItem,
@@ -19,6 +19,10 @@ from python_qt_binding.QtWidgets import (
 )
 
 LOG_HEADER = "<RqtParamManagerPlugin>"
+INVLID_PARAM_VAL = "---"
+TBL_COL_PARAM_NM = 0
+TBL_COL_PARAM_GET_VAL = 1
+TBL_COL_PARAM_UPD_VAL = 2
 
 
 class NotEditableDelegate(QItemDelegate):
@@ -92,46 +96,40 @@ class RqtParamManagerPlugin(Plugin):
     def setupParamsTable(self, table):
         table.setColumnCount(3)
 
-        # dummy data
-        # table.setRowCount(200)
-        # table.setItem(0, 0, QTableWidgetItem("ABC"))
-        # table.setItem(0, 1, QTableWidgetItem("CDE"))
-        # table.setItem(0, 2, QTableWidgetItem("GHI"))
-
         # 列1,2は編集不可
         noEditDelegate = NotEditableDelegate()
-        table.setItemDelegateForColumn(0, noEditDelegate)
-        table.setItemDelegateForColumn(1, noEditDelegate)
+        table.setItemDelegateForColumn(TBL_COL_PARAM_NM, noEditDelegate)
+        table.setItemDelegateForColumn(TBL_COL_PARAM_GET_VAL, noEditDelegate)
 
         # header columns
         headerCol1 = QTableWidgetItem()
         headerCol1.setText("パラメータ名")
-        table.setHorizontalHeaderItem(0, headerCol1)
+        table.setHorizontalHeaderItem(TBL_COL_PARAM_NM, headerCol1)
 
         headerCol2 = QTableWidgetItem()
         headerCol2.setText("現在値")
-        table.setHorizontalHeaderItem(1, headerCol2)
+        table.setHorizontalHeaderItem(TBL_COL_PARAM_GET_VAL, headerCol2)
 
         headerCol3 = QTableWidgetItem()
         headerCol3.setText("更新値")
-        table.setHorizontalHeaderItem(2, headerCol3)
+        table.setHorizontalHeaderItem(TBL_COL_PARAM_UPD_VAL, headerCol3)
 
         # header resize
         header = table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Stretch)
-        header.setSectionResizeMode(1, QHeaderView.Fixed)
-        header.setSectionResizeMode(2, QHeaderView.Fixed)
-        table.setColumnWidth(1, 120)
-        table.setColumnWidth(2, 120)
+        header.setSectionResizeMode(TBL_COL_PARAM_NM, QHeaderView.Stretch)
+        header.setSectionResizeMode(TBL_COL_PARAM_GET_VAL, QHeaderView.Fixed)
+        header.setSectionResizeMode(TBL_COL_PARAM_UPD_VAL, QHeaderView.Fixed)
+        table.setColumnWidth(TBL_COL_PARAM_GET_VAL, 120)
+        table.setColumnWidth(TBL_COL_PARAM_UPD_VAL, 120)
 
         table.verticalHeader().hide()
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
         print "shutdown !!!"
-        
+
         self.get_timer.stop()
-        
+
         # rospy.signal_shutdown('Quit')
         # sys.exit(0)
         # print rospy.get_name()
@@ -229,17 +227,52 @@ class RqtParamManagerPlugin(Plugin):
         for param in params:
             try:
                 label = param["paramDisp"]
-                table.setItem(n, 0, QTableWidgetItem(label))
+                table.setItem(n, TBL_COL_PARAM_NM, QTableWidgetItem(label))
+
                 # print param
                 # print "--------------"
             except KeyError as e:
-                table.setItem(n, 0, QTableWidgetItem("不明"))
+                table.setItem(n, TBL_COL_PARAM_NM, QTableWidgetItem("不明"))
                 rospy.logerr("%s conf file key error. %s", LOG_HEADER, e)
 
+            table.setItem(
+                n,
+                TBL_COL_PARAM_GET_VAL,
+                QTableWidgetItem(INVLID_PARAM_VAL)
+            )
+            table.setItem(n, TBL_COL_PARAM_UPD_VAL, QTableWidgetItem(""))
             n = n + 1
 
     def onGetParams(self):
-        print "get param"
+        # print "get param"
+        n = len(self.params)
+        for n in range(n):
+            param = self.params[n]
+            val = INVLID_PARAM_VAL
+            try:
+                param_nm = param["paramName"]
+                # print param_nm
+                val = rospy.get_param(param_nm)
+                # print "val(%s)" % (val)
+            except KeyError as e:
+                # エラーに出すと数がすごいことになりそうなので
+                # print e
+                pass
+            # print "[%d] %s = %s" % (n, param_nm, val)
+            table = self._widget.tblParams
+            table.setItem(
+                n,
+                TBL_COL_PARAM_GET_VAL,
+                QTableWidgetItem("%s" % val)
+            )
+            updCellVal = table.item(n, TBL_COL_PARAM_UPD_VAL).text()
+            # 無効データ取得 もしくは 初回データ更新
+            if INVLID_PARAM_VAL == val or len(updCellVal) == 0:
+                table.setItem(
+                    n,
+                    TBL_COL_PARAM_UPD_VAL,
+                    QTableWidgetItem("%s" % val)
+                )
 
     def onExecUpdate(self):
         print "exec update"
