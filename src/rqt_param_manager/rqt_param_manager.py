@@ -10,6 +10,7 @@ from qt_gui.plugin import Plugin
 
 from python_qt_binding import loadUi
 from python_qt_binding import QtGui
+from python_qt_binding.QtCore import QTimer
 from python_qt_binding.QtWidgets import (
     QWidget,
     QTableWidgetItem,
@@ -40,6 +41,7 @@ class RqtParamManagerPlugin(Plugin):
         self.get_interval = 0
         self.dump_yaml_file_path = ""
         self.params = {}
+        self.get_timer = QTimer()
 
         self.setObjectName('RqtParamManagerPlugin')
 
@@ -76,6 +78,16 @@ class RqtParamManagerPlugin(Plugin):
             self._widget.btnSave.clicked.connect(self.onExecSave)
 
             self.loadParamsTableItem(self._widget.tblParams, self.params)
+
+            self.get_timer.timeout.connect(self.onGetParams)
+            if self.get_interval > 0:
+                self.onGetParams()
+                rospy.loginfo(
+                    "%s start monitor. interval=%d sec",
+                    LOG_HEADER,
+                    self.get_interval
+                )
+                self.get_timer.start(self.get_interval * 1000)
 
     def setupParamsTable(self, table):
         table.setColumnCount(3)
@@ -116,7 +128,22 @@ class RqtParamManagerPlugin(Plugin):
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
-        pass
+        print "shutdown !!!"
+        
+        self.get_timer.stop()
+        
+        # rospy.signal_shutdown('Quit')
+        # sys.exit(0)
+        # print rospy.get_name()
+        # UIが終了してもrosparamに「/rqt_gui_py_node_<no>/conffile」
+        # が残っているので削除。この処理が必要なのかどうか不明だが。
+        # まぁやっておく。
+        self_ros_param_names = [s for s in rospy.get_param_names()
+                                if rospy.get_name() in s]
+        if len(self_ros_param_names):
+            for self_ros_param_name in self_ros_param_names:
+                rospy.delete_param(self_ros_param_name)
+                # print self_ros_param_name
 
     def save_settings(self, plugin_settings, instance_settings):
         # TODO save intrinsic configuration, usually using:
@@ -174,7 +201,7 @@ class RqtParamManagerPlugin(Plugin):
                 self.title.encode('utf-8')
             )
             rospy.loginfo(
-                "%s getInterval=%s",
+                "%s getInterval=%s sec",
                 LOG_HEADER,
                 self.get_interval
             )
@@ -203,16 +230,21 @@ class RqtParamManagerPlugin(Plugin):
             try:
                 label = param["paramDisp"]
                 table.setItem(n, 0, QTableWidgetItem(label))
-                print param
-                print "--------------"
+                # print param
+                # print "--------------"
             except KeyError as e:
                 table.setItem(n, 0, QTableWidgetItem("不明"))
                 rospy.logerr("%s conf file key error. %s", LOG_HEADER, e)
 
             n = n + 1
 
+    def onGetParams(self):
+        print "get param"
+
     def onExecUpdate(self):
         print "exec update"
+        # val = rospy.get_param("/rosversion")
+        print "val=%s" % val
 
     def onExecSave(self):
         print "exec save"
