@@ -5,9 +5,7 @@ import os
 import rospy
 import rospkg
 
-
 from qt_gui.plugin import Plugin
-
 from python_qt_binding import loadUi
 from python_qt_binding import QtGui
 from python_qt_binding.QtCore import QTimer, QVariant
@@ -18,6 +16,7 @@ from python_qt_binding.QtWidgets import (
     QHeaderView,
 )
 
+# ================ 定数一覧 ================
 LOG_HEADER = "<RqtParamManagerPlugin>"
 INVALID_VAL = "---"
 TBL_COL_PARAM_NM = 0
@@ -26,6 +25,8 @@ TBL_COL_PARAM_UPD_VAL = 2
 
 
 class NotEditableDelegate(QItemDelegate):
+    """特定の列のセルを編集不可にする為に使用するDelegateクラス"""
+
     def __init__(self, *args):
         super(NotEditableDelegate, self).__init__(*args)
 
@@ -37,6 +38,8 @@ class NotEditableDelegate(QItemDelegate):
 
 
 class RqtParamManagerPlugin(Plugin):
+    """UIのメインクラス"""
+
     def __init__(self, context):
         super(RqtParamManagerPlugin, self).__init__(context)
 
@@ -80,10 +83,11 @@ class RqtParamManagerPlugin(Plugin):
             # bind connections
             self._widget.btnUpdate.clicked.connect(self.onExecUpdate)
             self._widget.btnSave.clicked.connect(self.onExecSave)
+            self.get_timer.timeout.connect(self.onGetParams)
 
             self.loadParamsTableItem(self._widget.tblParams, self.params)
 
-            self.get_timer.timeout.connect(self.onGetParams)
+            # 定期監視処理の開始
             if self.get_interval > 0:
                 self.onGetParams()
                 rospy.loginfo(
@@ -94,6 +98,7 @@ class RqtParamManagerPlugin(Plugin):
                 self.get_timer.start(self.get_interval * 1000)
 
     def setupParamsTable(self, table):
+        # 列は3列
         table.setColumnCount(3)
 
         # 列1,2は編集不可
@@ -101,7 +106,7 @@ class RqtParamManagerPlugin(Plugin):
         table.setItemDelegateForColumn(TBL_COL_PARAM_NM, noEditDelegate)
         table.setItemDelegateForColumn(TBL_COL_PARAM_GET_VAL, noEditDelegate)
 
-        # header columns
+        # ヘッダー列の設定
         headerCol1 = QTableWidgetItem()
         headerCol1.setText("パラメータ名")
         table.setHorizontalHeaderItem(TBL_COL_PARAM_NM, headerCol1)
@@ -114,7 +119,6 @@ class RqtParamManagerPlugin(Plugin):
         headerCol3.setText("更新値")
         table.setHorizontalHeaderItem(TBL_COL_PARAM_UPD_VAL, headerCol3)
 
-        # header resize
         header = table.horizontalHeader()
         header.setSectionResizeMode(TBL_COL_PARAM_NM, QHeaderView.Stretch)
         header.setSectionResizeMode(TBL_COL_PARAM_GET_VAL, QHeaderView.Fixed)
@@ -125,14 +129,8 @@ class RqtParamManagerPlugin(Plugin):
         table.verticalHeader().hide()
 
     def shutdown_plugin(self):
-        # TODO unregister all publishers here
-        print "shutdown !!!"
-
         self.get_timer.stop()
 
-        # rospy.signal_shutdown('Quit')
-        # sys.exit(0)
-        # print rospy.get_name()
         # UIが終了してもrosparamに「/rqt_gui_py_node_<no>/conffile」
         # が残っているので削除。この処理が必要なのかどうか不明だが。
         # まぁやっておく。
@@ -141,7 +139,6 @@ class RqtParamManagerPlugin(Plugin):
         if len(self_ros_param_names):
             for self_ros_param_name in self_ros_param_names:
                 rospy.delete_param(self_ros_param_name)
-                # print self_ros_param_name
 
     def save_settings(self, plugin_settings, instance_settings):
         # TODO save intrinsic configuration, usually using:
@@ -187,8 +184,6 @@ class RqtParamManagerPlugin(Plugin):
         try:
             f = open(confFilePath, 'r')
             json_dict = json.load(f)
-            # print('json_dict:{}'.format(type(json_dict)))
-            # print json_dict["title"]
             self.title = json_dict["title"]
             self.get_interval = json_dict["getInterval"]
             self.dump_yaml_file_path = json_dict["dumpYaml"]
@@ -219,18 +214,12 @@ class RqtParamManagerPlugin(Plugin):
 
     def loadParamsTableItem(self, table, params):
         rowNum = len(params)
-        # print "rowNum=%d" % rowNum
-
         table.setRowCount(rowNum)
-
         n = 0
         for param in params:
             try:
                 label = param["paramDisp"]
                 table.setItem(n, TBL_COL_PARAM_NM, QTableWidgetItem(label))
-
-                # print param
-                # print "--------------"
             except KeyError as e:
                 table.setItem(n, TBL_COL_PARAM_NM, QTableWidgetItem("不明"))
                 rospy.logerr("%s conf file key error. %s", LOG_HEADER, e)
@@ -244,21 +233,16 @@ class RqtParamManagerPlugin(Plugin):
             n = n + 1
 
     def onGetParams(self):
-        # print "get param"
         n = len(self.params)
         for n in range(n):
             param = self.params[n]
             val = INVALID_VAL
             try:
                 param_nm = param["paramName"]
-                # print param_nm
                 val = rospy.get_param(param_nm)
-                # print "val(%s)" % (val)
             except KeyError as e:
-                # エラーに出すと数がすごいことになりそうなので
-                # print e
+                # エラーに出すと数がすごいことになりそうなので出さない
                 pass
-            # print "[%d] %s = %s" % (n, param_nm, val)
             table = self._widget.tblParams
             table.setItem(
                 n,
