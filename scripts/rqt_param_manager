@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import sys
-sys.path.append("/home/yoods/catkin_ws/src/rqt_param_manager/src")
 from rqt_param_manager.rqt_param_manager import RqtParamManagerPlugin
 from rqt_gui.main import Main
 

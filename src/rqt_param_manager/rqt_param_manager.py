@@ -52,15 +52,15 @@ class RqtParamManagerPlugin(Plugin):
         super(RqtParamManagerPlugin, self).__init__(context)
 
         # クラス変数初期化
-        self.title = "不明"
-        self.get_interval = 0
-        self.dump_yaml_file_path = ""
-        self.params = {}
-        self.get_timer = QTimer()
+        self._title = "不明"
+        self._get_interval = 0
+        self._dump_yaml_file_path = ""
+        self._params = {}
+        self._monitor_timer = QTimer()
 
         self.setObjectName('RqtParamManagerPlugin')
 
-        resultLoadConfFile = self.loadConfFile(sys.argv)
+        result_load_conf = self._load_conf_file(sys.argv)
 
         # Create QWidget
         self._widget = QWidget()
@@ -73,53 +73,53 @@ class RqtParamManagerPlugin(Plugin):
         loadUi(ui_file, self._widget)
 
         self._widget.setObjectName('RqtParamManagerPluginUi')
-        self._widget.setWindowTitle(self.title)
+        self._widget.setWindowTitle(self._title)
 
-        serNum = context.serial_number()
-        if serNum > 1:
+        serial_number = context.serial_number()
+        if serial_number > 1:
             self._widget.setWindowTitle(
-                self._widget.windowTitle() + (' (%d)' % serNum))
+                self._widget.windowTitle() + (' (%d)' % serial_number))
 
         context.add_widget(self._widget)
 
-        self.setupParamsTable(self._widget.tblParams)
+        self._setup_params_table(self._widget.tblParams)
 
-        if not resultLoadConfFile:
+        if not result_load_conf:
             self._widget.btnUpdate.setEnabled(False)
             self._widget.btnSave.setEnabled(False)
         else:
             # bind connections
-            self._widget.btnUpdate.clicked.connect(self.onExecUpdate)
-            self._widget.btnSave.clicked.connect(self.onExecSave)
-            self.get_timer.timeout.connect(self.onGetParams)
+            self._widget.btnUpdate.clicked.connect(self._on_exec_update)
+            self._widget.btnSave.clicked.connect(self._on_exec_save)
+            self._monitor_timer.timeout.connect(self._on_get_params)
 
-            self.loadParamsTableItem(self._widget.tblParams, self.params)
+            self._load_params_table_item(self._widget.tblParams, self._params)
 
             # テーブル行とパラメータ数のチェック
-            tableRowNum = self._widget.tblParams.rowCount()
-            paramNum = len(self.params)
-            if tableRowNum != paramNum or paramNum == 0:
+            table_row_num = self._widget.tblParams.rowCount()
+            param_num = len(self._params)
+            if table_row_num != param_num or param_num == 0:
                 self._widget.btnUpdate.setEnabled(False)
                 self._widget.btnSave.setEnabled(False)
 
             # 定期監視処理の開始
-            if self.get_interval > 0:
-                self.onGetParams()
+            if self._get_interval > 0:
+                self._on_get_params()
                 rospy.loginfo(
                     "%s start monitor. interval=%d sec",
                     LOG_HEADER,
-                    self.get_interval
+                    self._get_interval
                 )
-                self.get_timer.start(self.get_interval * 1000)
+                self._monitor_timer.start(self._get_interval * 1000)
 
-    def setupParamsTable(self, table):
+    def _setup_params_table(self, table):
         # 列は3列
         table.setColumnCount(3)
 
         # 列1,2は編集不可
-        noEditDelegate = NotEditableDelegate()
-        table.setItemDelegateForColumn(TBL_COL_PARAM_NM, noEditDelegate)
-        table.setItemDelegateForColumn(TBL_COL_PARAM_CUR_VAL, noEditDelegate)
+        no_edit_delegate = NotEditableDelegate()
+        table.setItemDelegateForColumn(TBL_COL_PARAM_NM, no_edit_delegate)
+        table.setItemDelegateForColumn(TBL_COL_PARAM_CUR_VAL, no_edit_delegate)
 
         # ヘッダー列の設定
         headerCol1 = QTableWidgetItem()
@@ -144,7 +144,7 @@ class RqtParamManagerPlugin(Plugin):
         table.verticalHeader().hide()
 
     def shutdown_plugin(self):
-        self.get_timer.stop()
+        self._monitor_timer.stop()
 
         # UIが終了してもrosparamに「/rqt_gui_py_node_<no>/conffile」
         # が残っているので削除。この処理が必要なのかどうか不明だが。
@@ -172,7 +172,7 @@ class RqtParamManagerPlugin(Plugin):
         # in each dock widget title bar
         # Usually used to open a modal configuration dialog
 
-    def loadConfFile(self, argv):
+    def _load_conf_file(self, argv):
         result = False
 
         if not len(sys.argv) > 1:
@@ -180,8 +180,8 @@ class RqtParamManagerPlugin(Plugin):
         else:
             tokens = sys.argv[1].split(":=")
             if len(tokens) == 2 and tokens[0] == "_conffile":
-                confFilePath = tokens[1]
-                result = self.parseConfFile(confFilePath)
+                conf_file_path = tokens[1]
+                result = self._parse_conf_file(conf_file_path)
             else:
                 rospy.logerr(
                     "%s argv '_conffile' is wrong format. %s",
@@ -191,35 +191,35 @@ class RqtParamManagerPlugin(Plugin):
 
         return result
 
-    def parseConfFile(self, confFilePath):
+    def _parse_conf_file(self, conf_file_path):
         result = False
 
-        rospy.loginfo("%s load conf file. path=%s", LOG_HEADER, confFilePath)
+        rospy.loginfo("%s load conf file. path=%s", LOG_HEADER, conf_file_path)
         import json
         try:
-            f = open(confFilePath, 'r')
+            f = open(conf_file_path, 'r')
             json_dict = json.load(f)
-            self.title = json_dict[KEY_CONFFILE_TITLE]
-            self.get_interval = json_dict[KEY_CONFFILE_GET_INTERVAL]
-            self.dump_yaml_file_path = json_dict[KEY_CONFFILE_DUMP_YAML]
+            self._title = json_dict[KEY_CONFFILE_TITLE]
+            self._get_interval = json_dict[KEY_CONFFILE_GET_INTERVAL]
+            self._dump_yaml_file_path = json_dict[KEY_CONFFILE_DUMP_YAML]
 
             rospy.loginfo(
                 "%s title=%s",
                 LOG_HEADER,
-                self.title.encode(FILE_ENC)
+                self._title.encode(FILE_ENC)
             )
             rospy.loginfo(
                 "%s getInterval=%s sec",
                 LOG_HEADER,
-                self.get_interval
+                self._get_interval
             )
             rospy.loginfo(
                 "%s dumpYaml=%s",
                 LOG_HEADER,
-                self.dump_yaml_file_path.encode(FILE_ENC)
+                self._dump_yaml_file_path.encode(FILE_ENC)
             )
 
-            self.params = json_dict[KEY_CONFFILE_PARAMS]
+            self._params = json_dict[KEY_CONFFILE_PARAMS]
 
             result = True
         except IOError as e:
@@ -227,9 +227,9 @@ class RqtParamManagerPlugin(Plugin):
 
         return result
 
-    def loadParamsTableItem(self, table, params):
-        rowNum = len(params)
-        table.setRowCount(rowNum)
+    def _load_params_table_item(self, table, params):
+        param_num = len(params)
+        table.setRowCount(param_num)
         n = 0
         for param in params:
             try:
@@ -247,14 +247,14 @@ class RqtParamManagerPlugin(Plugin):
             table.setItem(n, TBL_COL_PARAM_UPD_VAL, QTableWidgetItem(""))
             n += 1
 
-    def onGetParams(self):
-        paramNum = len(self.params)
-        for n in range(paramNum):
-            param = self.params[n]
+    def _on_get_params(self):
+        param_num = len(self._params)
+        for n in range(param_num):
+            param = self._params[n]
             val = INVALID_VAL
             try:
-                paramNm = param[KEY_CONFFILE_PARAM_NM]
-                val = rospy.get_param(paramNm)
+                param_nm = param[KEY_CONFFILE_PARAM_NM]
+                val = rospy.get_param(param_nm)
             except KeyError as e:
                 # エラーに出すと数がすごいことになりそうなので出さない
                 pass
@@ -264,46 +264,47 @@ class RqtParamManagerPlugin(Plugin):
                 TBL_COL_PARAM_CUR_VAL,
                 QTableWidgetItem("%s" % val)
             )
-            updVal = table.item(n, TBL_COL_PARAM_UPD_VAL).text()
+            upd_val = table.item(n, TBL_COL_PARAM_UPD_VAL).text()
             # 無効データ取得 もしくは 初回データ更新
             if INVALID_VAL == val \
-               or len(updVal) == 0 \
-               or (INVALID_VAL != val and updVal == INVALID_VAL):
+               or len(upd_val) == 0 \
+               or (INVALID_VAL != val and upd_val == INVALID_VAL):
                 table.setItem(
                     n,
                     TBL_COL_PARAM_UPD_VAL,
                     QTableWidgetItem("%s" % val)
                 )
 
-    def onExecUpdate(self):
+    def _on_exec_update(self):
         result = False
         table = self._widget.tblParams
-        rowNum = table.rowCount()
-        
-        updNum = 0
-        okNum = 0
-        for n in range(rowNum):
-            curVal = table.item(n, TBL_COL_PARAM_CUR_VAL).text()
-            updVal = table.item(n, TBL_COL_PARAM_UPD_VAL).text()
+        row_num = table.rowCount()
 
-            if curVal == updVal or \
-               INVALID_VAL != updVal or \
-               len(updVal) <= 0:
+        upd_num = 0
+        ok_num = 0
+        for n in range(row_num):
+            cur_val = table.item(n, TBL_COL_PARAM_CUR_VAL).text()
+            upd_val = table.item(n, TBL_COL_PARAM_UPD_VAL).text()
 
-                param = self.params[n]
-                updNum += 1
+            if cur_val == upd_val or \
+               INVALID_VAL == upd_val or \
+               len(upd_val) <= 0:
+                pass
+            else:
+                param = self._params[n]
+                upd_num += 1
 
                 try:
-                    paramNm = param[KEY_CONFFILE_PARAM_NM]
+                    param_nm = param[KEY_CONFFILE_PARAM_NM]
 
-                    rospy.set_param(paramNm, updVal)
+                    rospy.set_param(param_nm, upd_val)
                     rospy.loginfo(
-                        "%s paramNm=%s val=%s",
+                        "%s param_nm=%s val=%s",
                         LOG_HEADER,
-                        paramNm,
-                        updVal
+                        param_nm,
+                        upd_val
                     )
-                    okNum += 1
+                    ok_num += 1
                 except KeyError as e:
                     rospy.logerr(
                         "%s update faild. paramNo=%d cause=%s",
@@ -312,29 +313,28 @@ class RqtParamManagerPlugin(Plugin):
                         e
                     )
 
-        if updNum != okNum:
+        if upd_num != ok_num:
             QMessageBox.warning(self._widget, "警告", "一部パラメータの更新に失敗しました。")
         else:
             result = True
         return result
 
-    def onExecSave(self):
-        self.get_timer.stop()
+    def _on_exec_save(self):
+        self._monitor_timer.stop()
         self._widget.setEnabled(False)
-        
-        if not self.onExecUpdate():
-            self.get_timer.start()
+
+        if not self._on_exec_update():
+            self._monitor_timer.start()
             QMessageBox.critical(self._widget, "エラー", "保存に失敗しました。")
             return
 
-        # http://docs.ros.org/api/rosparam/html/
         import rosparam
         try:
-            rosparam.dump_params("/tmp/ros.yaml","/")
-            QMessageBox.information(self._widget,"お知らせ","設定を保存しました。")
+            rosparam.dump_params(self._dump_yaml_file_path, "/")
+            QMessageBox.information(self._widget, "お知らせ", "設定を保存しました。")
         except IOError as e:
             rospy.logerr("%s dump failed. %s", LOG_HEADER, e)
             QMessageBox.critical(self._widget, "エラー", "保存に失敗しました。")
 
-        self.get_timer.start()
+        self._monitor_timer.start()
         self._widget.setEnabled(True)
