@@ -19,7 +19,7 @@ from python_qt_binding.QtWidgets import (
 )
 
 LOG_HEADER = "<RqtParamManagerPlugin>"
-INVLID_PARAM_VAL = "---"
+INVALID_VAL = "---"
 TBL_COL_PARAM_NM = 0
 TBL_COL_PARAM_GET_VAL = 1
 TBL_COL_PARAM_UPD_VAL = 2
@@ -238,7 +238,7 @@ class RqtParamManagerPlugin(Plugin):
             table.setItem(
                 n,
                 TBL_COL_PARAM_GET_VAL,
-                QTableWidgetItem(INVLID_PARAM_VAL)
+                QTableWidgetItem(INVALID_VAL)
             )
             table.setItem(n, TBL_COL_PARAM_UPD_VAL, QTableWidgetItem(""))
             n = n + 1
@@ -248,7 +248,7 @@ class RqtParamManagerPlugin(Plugin):
         n = len(self.params)
         for n in range(n):
             param = self.params[n]
-            val = INVLID_PARAM_VAL
+            val = INVALID_VAL
             try:
                 param_nm = param["paramName"]
                 # print param_nm
@@ -267,7 +267,9 @@ class RqtParamManagerPlugin(Plugin):
             )
             updCellVal = table.item(n, TBL_COL_PARAM_UPD_VAL).text()
             # 無効データ取得 もしくは 初回データ更新
-            if INVLID_PARAM_VAL == val or len(updCellVal) == 0:
+            if INVALID_VAL == val \
+               or len(updCellVal) == 0 \
+               or (INVALID_VAL != val and updCellVal == INVALID_VAL):
                 table.setItem(
                     n,
                     TBL_COL_PARAM_UPD_VAL,
