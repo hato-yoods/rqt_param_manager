@@ -276,18 +276,23 @@ class RqtParamManagerPlugin(Plugin):
                 )
 
     def onExecUpdate(self):
+        result = False
         table = self._widget.tblParams
         rowNum = table.rowCount()
-
+        
+        updNum = 0
         okNum = 0
         for n in range(rowNum):
             curVal = table.item(n, TBL_COL_PARAM_CUR_VAL).text()
             updVal = table.item(n, TBL_COL_PARAM_UPD_VAL).text()
 
-            if curVal == updVal:
-                pass
-            elif INVALID_VAL != updVal and len(updVal) > 0:
+            if curVal == updVal or \
+               INVALID_VAL != updVal or \
+               len(updVal) <= 0:
+
                 param = self.params[n]
+                updNum += 1
+
                 try:
                     paramNm = param[KEY_CONFFILE_PARAM_NM]
 
@@ -307,5 +312,29 @@ class RqtParamManagerPlugin(Plugin):
                         e
                     )
 
+        if updNum != okNum:
+            QMessageBox.warning(self._widget, "警告", "一部パラメータの更新に失敗しました。")
+        else:
+            result = True
+        return result
+
     def onExecSave(self):
-        print "exec save"
+        self.get_timer.stop()
+        self._widget.setEnabled(False)
+        
+        if not self.onExecUpdate():
+            self.get_timer.start()
+            QMessageBox.critical(self._widget, "エラー", "保存に失敗しました。")
+            return
+
+        # http://docs.ros.org/api/rosparam/html/
+        import rosparam
+        try:
+            rosparam.dump_params("/tmp/ros.yaml","/")
+            QMessageBox.information(self._widget,"お知らせ","設定を保存しました。")
+        except IOError as e:
+            rospy.logerr("%s dump failed. %s", LOG_HEADER, e)
+            QMessageBox.critical(self._widget, "エラー", "保存に失敗しました。")
+
+        self.get_timer.start()
+        self._widget.setEnabled(True)
