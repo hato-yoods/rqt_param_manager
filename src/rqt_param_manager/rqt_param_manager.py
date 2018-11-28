@@ -14,14 +14,22 @@ from python_qt_binding.QtWidgets import (
     QTableWidgetItem,
     QItemDelegate,
     QHeaderView,
+    QMessageBox,
 )
 
 # ================ 定数一覧 ================
 LOG_HEADER = "<RqtParamManagerPlugin>"
+FILE_ENC = "utf-8"
 INVALID_VAL = "---"
 TBL_COL_PARAM_NM = 0
-TBL_COL_PARAM_GET_VAL = 1
+TBL_COL_PARAM_CUR_VAL = 1
 TBL_COL_PARAM_UPD_VAL = 2
+KEY_CONFFILE_TITLE = "title"
+KEY_CONFFILE_GET_INTERVAL = "getInterval"
+KEY_CONFFILE_DUMP_YAML = "dumpYaml"
+KEY_CONFFILE_PARAMS = "params"
+KEY_CONFFILE_PARAM_NM = "paramName"
+KEY_CONFFILE_PARAM_DISP = "paramDisp"
 
 
 class NotEditableDelegate(QItemDelegate):
@@ -87,6 +95,13 @@ class RqtParamManagerPlugin(Plugin):
 
             self.loadParamsTableItem(self._widget.tblParams, self.params)
 
+            # テーブル行とパラメータ数のチェック
+            tableRowNum = self._widget.tblParams.rowCount()
+            paramNum = len(self.params)
+            if tableRowNum != paramNum or paramNum == 0:
+                self._widget.btnUpdate.setEnabled(False)
+                self._widget.btnSave.setEnabled(False)
+
             # 定期監視処理の開始
             if self.get_interval > 0:
                 self.onGetParams()
@@ -104,7 +119,7 @@ class RqtParamManagerPlugin(Plugin):
         # 列1,2は編集不可
         noEditDelegate = NotEditableDelegate()
         table.setItemDelegateForColumn(TBL_COL_PARAM_NM, noEditDelegate)
-        table.setItemDelegateForColumn(TBL_COL_PARAM_GET_VAL, noEditDelegate)
+        table.setItemDelegateForColumn(TBL_COL_PARAM_CUR_VAL, noEditDelegate)
 
         # ヘッダー列の設定
         headerCol1 = QTableWidgetItem()
@@ -113,7 +128,7 @@ class RqtParamManagerPlugin(Plugin):
 
         headerCol2 = QTableWidgetItem()
         headerCol2.setText("現在値")
-        table.setHorizontalHeaderItem(TBL_COL_PARAM_GET_VAL, headerCol2)
+        table.setHorizontalHeaderItem(TBL_COL_PARAM_CUR_VAL, headerCol2)
 
         headerCol3 = QTableWidgetItem()
         headerCol3.setText("更新値")
@@ -121,9 +136,9 @@ class RqtParamManagerPlugin(Plugin):
 
         header = table.horizontalHeader()
         header.setSectionResizeMode(TBL_COL_PARAM_NM, QHeaderView.Stretch)
-        header.setSectionResizeMode(TBL_COL_PARAM_GET_VAL, QHeaderView.Fixed)
+        header.setSectionResizeMode(TBL_COL_PARAM_CUR_VAL, QHeaderView.Fixed)
         header.setSectionResizeMode(TBL_COL_PARAM_UPD_VAL, QHeaderView.Fixed)
-        table.setColumnWidth(TBL_COL_PARAM_GET_VAL, 120)
+        table.setColumnWidth(TBL_COL_PARAM_CUR_VAL, 120)
         table.setColumnWidth(TBL_COL_PARAM_UPD_VAL, 120)
 
         table.verticalHeader().hide()
@@ -184,14 +199,14 @@ class RqtParamManagerPlugin(Plugin):
         try:
             f = open(confFilePath, 'r')
             json_dict = json.load(f)
-            self.title = json_dict["title"]
-            self.get_interval = json_dict["getInterval"]
-            self.dump_yaml_file_path = json_dict["dumpYaml"]
+            self.title = json_dict[KEY_CONFFILE_TITLE]
+            self.get_interval = json_dict[KEY_CONFFILE_GET_INTERVAL]
+            self.dump_yaml_file_path = json_dict[KEY_CONFFILE_DUMP_YAML]
 
             rospy.loginfo(
                 "%s title=%s",
                 LOG_HEADER,
-                self.title.encode('utf-8')
+                self.title.encode(FILE_ENC)
             )
             rospy.loginfo(
                 "%s getInterval=%s sec",
@@ -201,10 +216,10 @@ class RqtParamManagerPlugin(Plugin):
             rospy.loginfo(
                 "%s dumpYaml=%s",
                 LOG_HEADER,
-                self.dump_yaml_file_path.encode('utf-8')
+                self.dump_yaml_file_path.encode(FILE_ENC)
             )
 
-            self.params = json_dict["params"]
+            self.params = json_dict[KEY_CONFFILE_PARAMS]
 
             result = True
         except IOError as e:
@@ -218,7 +233,7 @@ class RqtParamManagerPlugin(Plugin):
         n = 0
         for param in params:
             try:
-                label = param["paramDisp"]
+                label = param[KEY_CONFFILE_PARAM_DISP]
                 table.setItem(n, TBL_COL_PARAM_NM, QTableWidgetItem(label))
             except KeyError as e:
                 table.setItem(n, TBL_COL_PARAM_NM, QTableWidgetItem("不明"))
@@ -226,34 +241,34 @@ class RqtParamManagerPlugin(Plugin):
 
             table.setItem(
                 n,
-                TBL_COL_PARAM_GET_VAL,
+                TBL_COL_PARAM_CUR_VAL,
                 QTableWidgetItem(INVALID_VAL)
             )
             table.setItem(n, TBL_COL_PARAM_UPD_VAL, QTableWidgetItem(""))
-            n = n + 1
+            n += 1
 
     def onGetParams(self):
-        n = len(self.params)
-        for n in range(n):
+        paramNum = len(self.params)
+        for n in range(paramNum):
             param = self.params[n]
             val = INVALID_VAL
             try:
-                param_nm = param["paramName"]
-                val = rospy.get_param(param_nm)
+                paramNm = param[KEY_CONFFILE_PARAM_NM]
+                val = rospy.get_param(paramNm)
             except KeyError as e:
                 # エラーに出すと数がすごいことになりそうなので出さない
                 pass
             table = self._widget.tblParams
             table.setItem(
                 n,
-                TBL_COL_PARAM_GET_VAL,
+                TBL_COL_PARAM_CUR_VAL,
                 QTableWidgetItem("%s" % val)
             )
-            updCellVal = table.item(n, TBL_COL_PARAM_UPD_VAL).text()
+            updVal = table.item(n, TBL_COL_PARAM_UPD_VAL).text()
             # 無効データ取得 もしくは 初回データ更新
             if INVALID_VAL == val \
-               or len(updCellVal) == 0 \
-               or (INVALID_VAL != val and updCellVal == INVALID_VAL):
+               or len(updVal) == 0 \
+               or (INVALID_VAL != val and updVal == INVALID_VAL):
                 table.setItem(
                     n,
                     TBL_COL_PARAM_UPD_VAL,
@@ -261,9 +276,36 @@ class RqtParamManagerPlugin(Plugin):
                 )
 
     def onExecUpdate(self):
-        print "exec update"
-        # val = rospy.get_param("/rosversion")
-        print "val=%s" % val
+        table = self._widget.tblParams
+        rowNum = table.rowCount()
+
+        okNum = 0
+        for n in range(rowNum):
+            curVal = table.item(n, TBL_COL_PARAM_CUR_VAL).text()
+            updVal = table.item(n, TBL_COL_PARAM_UPD_VAL).text()
+
+            if curVal == updVal:
+                pass
+            elif INVALID_VAL != updVal and len(updVal) > 0:
+                param = self.params[n]
+                try:
+                    paramNm = param[KEY_CONFFILE_PARAM_NM]
+
+                    rospy.set_param(paramNm, updVal)
+                    rospy.loginfo(
+                        "%s paramNm=%s val=%s",
+                        LOG_HEADER,
+                        paramNm,
+                        updVal
+                    )
+                    okNum += 1
+                except KeyError as e:
+                    rospy.logerr(
+                        "%s update faild. paramNo=%d cause=%s",
+                        LOG_HEADER,
+                        n,
+                        e
+                    )
 
     def onExecSave(self):
         print "exec save"
