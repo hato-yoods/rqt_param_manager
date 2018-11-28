@@ -1,5 +1,5 @@
 {
-    "dumpYaml": "~/catkin_ws/src/rovi/livecamera_ld.yaml",
+    "dumpYaml": "/tmp/cam.yaml",
     "title": "カメラ（ライブ）",
     "params": [
         {

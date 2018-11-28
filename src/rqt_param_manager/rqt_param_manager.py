@@ -19,7 +19,6 @@ from python_qt_binding.QtWidgets import (
 )
 
 # ================ 定数一覧 ================
-LOG_HEADER = "<RqtParamManagerPlugin>"
 FILE_ENC = "utf-8"
 INVALID_VAL = "---"
 TBL_COL_PARAM_NM = 0
@@ -31,6 +30,7 @@ KEY_CONFFILE_DUMP_YAML = "dumpYaml"
 KEY_CONFFILE_PARAMS = "params"
 KEY_CONFFILE_PARAM_NM = "paramName"
 KEY_CONFFILE_PARAM_DISP = "paramDisp"
+
 
 # ================ クラス一覧 ================
 class NotEditableDelegate(QItemDelegate):
@@ -110,8 +110,7 @@ class RqtParamManagerPlugin(Plugin):
             if self._get_interval > 0:
                 self._on_get_params()
                 rospy.loginfo(
-                    "%s start monitor. interval=%d sec",
-                    LOG_HEADER,
+                    "start monitor. interval=%d sec",
                     self._get_interval
                 )
                 self._monitor_timer.start(self._get_interval * 1000)
@@ -201,7 +200,7 @@ class RqtParamManagerPlugin(Plugin):
         result = False
 
         if not len(sys.argv) > 1:
-            rospy.logerr("%s argv '_conffile' is not specified.", LOG_HEADER)
+            rospy.logerr("argv '_conffile' is not specified.")
         else:
             tokens = sys.argv[1].split(":=")
             if len(tokens) == 2 and tokens[0] == "_conffile":
@@ -209,8 +208,7 @@ class RqtParamManagerPlugin(Plugin):
                 result = self._parse_conf_file(conf_file_path)
             else:
                 rospy.logerr(
-                    "%s argv '_conffile' is wrong format. %s",
-                    LOG_HEADER,
+                    "argv '_conffile' is wrong format. %s",
                     sys.argv[1]
                 )
 
@@ -221,7 +219,7 @@ class RqtParamManagerPlugin(Plugin):
 
         result = False
 
-        rospy.loginfo("%s load conf file. path=%s", LOG_HEADER, conf_file_path)
+        rospy.loginfo("load conf file. path=%s", conf_file_path)
         import json
         try:
             f = open(conf_file_path, 'r')
@@ -230,19 +228,10 @@ class RqtParamManagerPlugin(Plugin):
             self._get_interval = json_dict[KEY_CONFFILE_GET_INTERVAL]
             self._dump_yaml_file_path = json_dict[KEY_CONFFILE_DUMP_YAML]
 
+            rospy.loginfo("title=%s", self._title.encode(FILE_ENC))
+            rospy.loginfo("getInterval=%s sec", self._get_interval)
             rospy.loginfo(
-                "%s title=%s",
-                LOG_HEADER,
-                self._title.encode(FILE_ENC)
-            )
-            rospy.loginfo(
-                "%s getInterval=%s sec",
-                LOG_HEADER,
-                self._get_interval
-            )
-            rospy.loginfo(
-                "%s dumpYaml=%s",
-                LOG_HEADER,
+                "dumpYaml=%s",
                 self._dump_yaml_file_path.encode(FILE_ENC)
             )
 
@@ -250,7 +239,7 @@ class RqtParamManagerPlugin(Plugin):
 
             result = True
         except IOError as e:
-            rospy.logerr("%s json file load failed. %s", LOG_HEADER, e)
+            rospy.logerr("json file load failed. %s", e)
 
         return result
 
@@ -266,7 +255,7 @@ class RqtParamManagerPlugin(Plugin):
                 table.setItem(n, TBL_COL_PARAM_NM, QTableWidgetItem(label))
             except KeyError as e:
                 table.setItem(n, TBL_COL_PARAM_NM, QTableWidgetItem("不明"))
-                rospy.logerr("%s conf file key error. %s", LOG_HEADER, e)
+                rospy.logerr("conf file key error. %s", e)
 
             table.setItem(
                 n,
@@ -308,7 +297,7 @@ class RqtParamManagerPlugin(Plugin):
 
     def _on_exec_update(self):
         """パラメータ更新実行処理"""
-
+        
         result = False
         table = self._widget.tblParams
         row_num = table.rowCount()
@@ -331,17 +320,11 @@ class RqtParamManagerPlugin(Plugin):
                     param_nm = param[KEY_CONFFILE_PARAM_NM]
 
                     rospy.set_param(param_nm, upd_val)
-                    rospy.loginfo(
-                        "%s param_nm=%s val=%s",
-                        LOG_HEADER,
-                        param_nm,
-                        upd_val
-                    )
+                    rospy.loginfo("param_nm=%s val=%s", param_nm, upd_val)
                     ok_num += 1
                 except KeyError as e:
                     rospy.logerr(
-                        "%s update faild. paramNo=%d cause=%s",
-                        LOG_HEADER,
+                        "update faild. paramNo=%d cause=%s",
                         n,
                         e
                     )
@@ -360,7 +343,7 @@ class RqtParamManagerPlugin(Plugin):
 
         if not self._on_exec_update():
             self._monitor_timer.start()
-            QMessageBox.critical(self._widget, "エラー", "保存に失敗しました。")
+            QMessageBox.critical(self._widget, "エラー", "パラメータの更新に失敗しました。")
             return
 
         import rosparam
@@ -368,7 +351,7 @@ class RqtParamManagerPlugin(Plugin):
             rosparam.dump_params(self._dump_yaml_file_path, "/")
             QMessageBox.information(self._widget, "お知らせ", "設定を保存しました。")
         except IOError as e:
-            rospy.logerr("%s dump failed. %s", LOG_HEADER, e)
+            rospy.logerr("dump failed. %s", e)
             QMessageBox.critical(self._widget, "エラー", "保存に失敗しました。")
 
         self._monitor_timer.start()

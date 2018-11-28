@@ -1,5 +1,5 @@
 {
-    "dumpYaml": "~/catkin_ws/src/rovi/phsft.yaml",
+    "dumpYaml": "/tmp/phsft.yaml",
     "title": "位相シフト",
     "params": [
         {
