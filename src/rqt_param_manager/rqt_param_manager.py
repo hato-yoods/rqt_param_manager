@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+# ================ インポート一覧 ================
 import sys
 import os
 import rospy
@@ -31,17 +32,23 @@ KEY_CONFFILE_PARAMS = "params"
 KEY_CONFFILE_PARAM_NM = "paramName"
 KEY_CONFFILE_PARAM_DISP = "paramDisp"
 
-
+# ================ クラス一覧 ================
 class NotEditableDelegate(QItemDelegate):
     """特定の列のセルを編集不可にする為に使用するDelegateクラス"""
 
     def __init__(self, *args):
+        """初期化処理"""
+
         super(NotEditableDelegate, self).__init__(*args)
 
     def createEditor(self, parent, option, index):
+        """エディタ作成処理"""
+
         return None
 
     def editorEvent(self, event, model, option, index):
+        """エディタイベント処理"""
+
         return False
 
 
@@ -49,6 +56,8 @@ class RqtParamManagerPlugin(Plugin):
     """UIのメインクラス"""
 
     def __init__(self, context):
+        """初期化処理"""
+
         super(RqtParamManagerPlugin, self).__init__(context)
 
         # クラス変数初期化
@@ -71,14 +80,7 @@ class RqtParamManagerPlugin(Plugin):
         )
 
         loadUi(ui_file, self._widget)
-
         self._widget.setObjectName('RqtParamManagerPluginUi')
-        self._widget.setWindowTitle(self._title)
-
-        serial_number = context.serial_number()
-        if serial_number > 1:
-            self._widget.setWindowTitle(
-                self._widget.windowTitle() + (' (%d)' % serial_number))
 
         context.add_widget(self._widget)
 
@@ -88,6 +90,8 @@ class RqtParamManagerPlugin(Plugin):
             self._widget.btnUpdate.setEnabled(False)
             self._widget.btnSave.setEnabled(False)
         else:
+            QTimer.singleShot(0, self._update_window_title)
+
             # bind connections
             self._widget.btnUpdate.clicked.connect(self._on_exec_update)
             self._widget.btnSave.clicked.connect(self._on_exec_save)
@@ -112,7 +116,20 @@ class RqtParamManagerPlugin(Plugin):
                 )
                 self._monitor_timer.start(self._get_interval * 1000)
 
+    def _update_window_title(self):
+        """ウィンドウタイトルを変更する処理"""
+
+        # 初期化処理内でsetWindowTitleを呼んでも変更されないので
+        self._widget.setWindowTitle(self._title)
+
+        # serial_number = context.serial_number()
+        # if serial_number > 1:
+        #    self._widget.setWindowTitle(
+        #        self._widget.windowTitle() + (' (%d)' % serial_number))
+
     def _setup_params_table(self, table):
+        """パラメータテーブル設定処理"""
+
         # 列は3列
         table.setColumnCount(3)
 
@@ -144,6 +161,8 @@ class RqtParamManagerPlugin(Plugin):
         table.verticalHeader().hide()
 
     def shutdown_plugin(self):
+        """シャットダウン処理"""
+
         self._monitor_timer.stop()
 
         # UIが終了してもrosparamに「/rqt_gui_py_node_<no>/conffile」
@@ -156,11 +175,15 @@ class RqtParamManagerPlugin(Plugin):
                 rospy.delete_param(self_ros_param_name)
 
     def save_settings(self, plugin_settings, instance_settings):
+        """設定保存処理"""
+
         # TODO save intrinsic configuration, usually using:
         # instance_settings.set_value(k, v)
         pass
 
     def restore_settings(self, plugin_settings, instance_settings):
+        """設定復帰処理"""
+
         # TODO restore intrinsic configuration, usually using:
         # v = instance_settings.value(k)
         pass
@@ -173,6 +196,8 @@ class RqtParamManagerPlugin(Plugin):
         # Usually used to open a modal configuration dialog
 
     def _load_conf_file(self, argv):
+        """PM設定ファイル読込処理"""
+
         result = False
 
         if not len(sys.argv) > 1:
@@ -192,6 +217,8 @@ class RqtParamManagerPlugin(Plugin):
         return result
 
     def _parse_conf_file(self, conf_file_path):
+        """PM設定ファイル解析処理"""
+
         result = False
 
         rospy.loginfo("%s load conf file. path=%s", LOG_HEADER, conf_file_path)
@@ -228,6 +255,8 @@ class RqtParamManagerPlugin(Plugin):
         return result
 
     def _load_params_table_item(self, table, params):
+        """パラメータテーブル項目読込処理"""
+
         param_num = len(params)
         table.setRowCount(param_num)
         n = 0
@@ -248,6 +277,8 @@ class RqtParamManagerPlugin(Plugin):
             n += 1
 
     def _on_get_params(self):
+        """パラメータ取得処理"""
+
         param_num = len(self._params)
         for n in range(param_num):
             param = self._params[n]
@@ -276,6 +307,8 @@ class RqtParamManagerPlugin(Plugin):
                 )
 
     def _on_exec_update(self):
+        """パラメータ更新実行処理"""
+
         result = False
         table = self._widget.tblParams
         row_num = table.rowCount()
@@ -320,6 +353,8 @@ class RqtParamManagerPlugin(Plugin):
         return result
 
     def _on_exec_save(self):
+        """パラメータ保存実行処理"""
+
         self._monitor_timer.stop()
         self._widget.setEnabled(False)
 
